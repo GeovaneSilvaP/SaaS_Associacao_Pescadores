@@ -1,0 +1,48 @@
+services:
+  api:
+    build:
+      context: ./back_end
+      target: dev
+    ports:
+      - "3333:3333"
+    env_file: ./back_end/.env
+    environment:
+      DB_HOST: db
+    volumes:
+      - ./back_end/src:/app/src
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./front_end
+      target: dev
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3333
+    volumes:
+      - ./front_end:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./back_end/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data:
