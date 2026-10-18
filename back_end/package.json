@@ -22,6 +22,7 @@
     "start": "node dist/server.js",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
-    "docker:reset": "docker compose down -v"
+    "docker:reset": "docker compose down -v",
+    "seed:admin": "tsx src/scripts/seedAdmin.ts"
   }
 }
