@@ -142,14 +142,14 @@ PORT=3333
 FRONTEND_URL=http://localhost:5173
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=sua_senha
+DB_PASSWORD=PESCA2026GEO
 DB_NAME=associacao
-JWT_SECRET=troque_por_uma_chave_longa_e_aleatoria
+JWT_SECRET=GEO13579PESCADORES2026
 
 # Usadas apenas pelo script de criação do admin (remova depois de rodar)
 ADMIN_NOME=Administrador
 ADMIN_EMAIL=admin@associacao.com
-ADMIN_SENHA=uma_senha_forte_aqui
+ADMIN_SENHA=GEO13579PESCADORES2026
 ```
 
 Observações:
