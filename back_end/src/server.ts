@@ -1,8 +1,5 @@
-// Importa a instância principal do aplicativo configurada (geralmente com Express ou similar)
 import app from "./app";
-// Importa as variáveis de ambiente validadas do projeto
 import { env } from "./config/env";
-// Importa a função responsável por verificar a conexão com o banco de dados MySQL
 import { testarConexao } from "./config/database";
 
 /**
