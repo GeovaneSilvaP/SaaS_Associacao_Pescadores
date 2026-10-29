@@ -13,6 +13,7 @@ export const pool: Pool = mysql.createPool({
   waitForConnections: true, // Aguarda na fila se todas as conexões estiverem em uso
   connectionLimit: 10, // Número máximo de conexões simultâneas permitidas no pool
   dateStrings: true, // Retorna campos de data como strings em vez de objetos Date do JavaScript
+  decimalNumbers: true,
 });
 
 /**

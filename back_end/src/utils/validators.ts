@@ -51,14 +51,19 @@ export function validarSenhaNova(valor: unknown): string {
   return senha;
 }
 
+/**
+ * Valida a estrutura matemática e o algoritmo oficial de dígitos verificadores do CPF brasileiro.
+ * Sanitiza a entrada removendo caracteres não numéricos e rejeita sequências repetidas inválidas.
+ */
 export function validarCPF(valor: unknown): string {
   const cpf = campoObrigatorio(valor, "CPF").replace(/\D/g, "");
 
-  // 11 dígitos e não pode ser sequência repetida (111.111.111-11 etc.)
+  // Regra de negócio: verifica tamanho exato de 11 dígitos e bloqueia falsos CPFs de dígitos repetidos (ex: 111.111.111-11)
   if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
     throw new AppError("CPF inválido", 400);
   }
 
+  // Função auxiliar para o cálculo do Módulo 11 (algoritmo padrão da Receita Federal)
   const calcularDigito = (base: string, pesoInicial: number) => {
     let soma = 0;
     for (let i = 0; i < base.length; i++) {
@@ -72,6 +77,7 @@ export function validarCPF(valor: unknown): string {
   const digito1 = calcularDigito(cpf.slice(0, 9), 10);
   const digito2 = calcularDigito(cpf.slice(0, 10), 11);
 
+  // Valida os dígitos verificadores calculados contra os dígitos informados no CPF
   if (digito1 !== Number(cpf[9]) || digito2 !== Number(cpf[10])) {
     throw new AppError("CPF inválido", 400);
   }
@@ -79,14 +85,19 @@ export function validarCPF(valor: unknown): string {
   return cpf;
 }
 
+/**
+ * Valida e normaliza datas no formato padrão ISO (YYYY-MM-DD),
+ * realizando validação estrita de calendário para evitar datas inconsistentes (ex: 31 de fevereiro).
+ */
 export function validarData(valor: unknown, nome: string) {
   const texto = campoObrigatorio(valor, nome);
 
+  // Assegura conformidade estrita com o padrão estipulado (YYYY-MM-DD) antes da conversão
   if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
     throw new AppError(`O campo ${nome} deve estar no formato AAAA-MM-DD`, 400);
   }
 
-  // Rejeita datas que não existem (ex.: 2024-02-31)
+  // Validação semântica: garante que o ecossistema Date reconheça a data como real e consistente (evita overflow de dias/meses)
   const data = new Date(`${texto}T00:00:00Z`);
   if (
     Number.isNaN(data.getTime()) ||
@@ -98,6 +109,10 @@ export function validarData(valor: unknown, nome: string) {
   return texto;
 }
 
+/**
+ * Processa campos de texto opcionais aplicando trim, validação de tipo string
+ * e restrição de tamanho máximo (limite de caracteres). Retorna null se ausente/vazio.
+ */
 export function textoOpcional(valor: unknown, nome: string, max: number) {
   if (valor === undefined || valor === null || valor === "") return null;
 
@@ -116,6 +131,10 @@ export function textoOpcional(valor: unknown, nome: string, max: number) {
   return texto === "" ? null : texto;
 }
 
+/**
+ * Sanitiza e valida números de telefone opcionais (fixo ou celular),
+ * garantindo a obrigatoriedade da estrutura básica contendo DDD + número (10 a 11 dígitos numéricos).
+ */
 export function telefoneOpcional(valor: unknown) {
   const texto = textoOpcional(valor, "telefone", 30);
   if (texto === null) return null;
@@ -128,6 +147,10 @@ export function telefoneOpcional(valor: unknown) {
   return digitos;
 }
 
+/**
+ * Realiza o parsing e validação de identificadores numéricos passados por parâmetros de rota/query,
+ * assegurando que sejam inteiros positivos estritos maiores que zero.
+ */
 export function validarId(valor: unknown) {
   const id = Number(valor);
   if (!Number.isInteger(id) || id <= 0) {
@@ -137,6 +160,10 @@ export function validarId(valor: unknown) {
   return id;
 }
 
+/**
+ * Valida valores categóricos de status de usuário, permitindo estritamente
+ * os estados de domínio definidos ("ativo" ou "inativo").
+ */
 export function validarStatus(valor: unknown): "ativo" | "inativo" {
   if (valor !== "ativo" && valor !== "inativo") {
     throw new AppError("Status deve ser 'ativo' ou 'inativo'", 400);
@@ -145,6 +172,10 @@ export function validarStatus(valor: unknown): "ativo" | "inativo" {
   return valor;
 }
 
+/**
+ * Valida e sanitiza parâmetros de paginação (offset-based pagination),
+ * aplicando valores padrão seguros e limites máximos de itens por página para proteção de performance.
+ */
 export function validarPaginacao(
   pagina: unknown,
   limite: unknown,
@@ -156,9 +187,66 @@ export function validarPaginacao(
     throw new AppError("Página inválida", 400);
   }
 
+  // Previne ataques de negação de serviço (DoS) por exaustão de memória com limites muito altos (hard cap em 100)
   if (!Number.isInteger(l) || l < 1 || l > 100) {
     throw new AppError("O limite deve estar entre 1 e 100", 400);
   }
 
   return { pagina: p, limite: l };
+}
+
+//
+export function validarCompetencia(valor: unknown) {
+  const texto = campoObrigatorio(valor, "competencia");
+
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(texto)) {
+    throw new AppError("A competência deve estar no formato AAAA-MM", 400);
+  }
+
+  return texto;
+}
+
+//
+export function validarValor(valor: unknown): number {
+  let numero = Number.NaN;
+
+  if (typeof valor === "number") {
+    numero = valor;
+  } else if (typeof valor === "string" && valor.trim() !== "") {
+    numero = Number(valor.trim().replace(",", "."));
+  }
+
+  if (!Number.isFinite(numero) || numero <= 0 || numero > 99999999.99) {
+    throw new AppError("Valor inválido: informe um número maior que zero", 400);
+  }
+
+  if (Math.abs(numero * 100 - Math.round(numero * 100)) > 1e-9) {
+    throw new AppError("O valor deve ter no máximo 2 casas decimais", 400);
+  }
+
+  return Math.round(numero * 100) / 100;
+}
+
+//
+export function validarDiaVencimento(valor: unknown) {
+  const dia = Number(valor);
+
+  if (!Number.isInteger(dia) || dia < 1 || dia > 31) {
+    throw new AppError(
+      "O dia de vencimento deve ser um número entre 1 e 31",
+      400,
+    );
+  }
+
+  return dia;
+}
+
+export function validarStatusMensalidade(
+  valor: unknown,
+): "pendente" | "pago" | "atrasado" {
+  if (valor !== "pendente" && valor !== "pago" && valor !== "atrasado") {
+    throw new AppError("Status deve ser 'pendente', 'pago' ou 'atrasado'", 400);
+  }
+
+  return valor;
 }
